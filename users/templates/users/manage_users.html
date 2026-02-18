@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold"><i class="fas fa-users-cog me-2"></i>User Management</h2>
+        <a href="{% url 'create_user' %}" class="btn btn-success"><i class="fas fa-plus me-2"></i>Create New User</a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-success">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card shadow border-0 rounded-4">
+        <div class="card-body p-0">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">Username</th>
+                        <th>Role</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td class="ps-4 fw-bold">
+                            {{ u.username }}
+                            {% if u.is_superuser %} <span class="badge bg-dark">Admin</span> {% endif %}
+                        </td>
+                        <td>
+                            {% if u.is_teacher %}
+                                <span class="badge bg-info text-dark">Lecturer</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Student</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ u.email }}</td>
+                        <td>
+                            {% if u.is_active %}
+                                <span class="text-success"><i class="fas fa-check-circle"></i> Active</span>
+                            {% else %}
+                                <span class="text-danger"><i class="fas fa-ban"></i> Banned</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="{% url 'admin_password_reset' u.id %}" class="btn btn-sm btn-outline-warning" title="Reset Password"><i class="fas fa-key"></i></a>
+                            <a href="{% url 'edit_user' u.id %}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="fas fa-edit"></i></a>
+                            {% if not u.is_superuser %}
+                                <a href="{% url 'delete_user' u.id %}" class="btn btn-sm btn-outline-danger" title="Delete"><i class="fas fa-trash"></i></a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

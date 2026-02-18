@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="modal fade" id="attendanceModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="fas fa-user-clock me-2"></i>Attendance Check</h5>
+      </div>
+      <div class="modal-body p-4 text-center">
+        <h4 class="fw-bold mb-3">Welcome to {{ lecture.title }}</h4>
+        <p class="text-muted mb-4">
+            By proceeding, you acknowledge that you are attending this training module at this specific date and time. This action will be logged in the company attendance register.
+        </p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="attendance_agreement" value="true">
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary btn-lg fw-bold">
+                    <i class="fas fa-check-circle me-2"></i>I Acknowledge & Attend
+                </button>
+            </div>
+        </form>
+        <div class="mt-3">
+            <a href="{% url 'lecture_list' %}" class="text-decoration-none text-muted small">Cancel and go back</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="draggable-note-box" class="shadow-lg rounded-3" style="display: none;">
+    <div id="note-box-header" class="bg-warning text-dark p-2 rounded-top d-flex justify-content-between align-items-center" style="cursor: move;">
+        <span class="fw-bold"><i class="fas fa-thumbtack me-2"></i>New Note</span>
+        <button type="button" class="btn-close btn-sm" onclick="closeNoteBox()"></button>
+    </div>
+    <div class="bg-light p-3 rounded-bottom border border-warning">
+        <textarea id="note-text-input" class="form-control mb-2" rows="4" placeholder="Type your thoughts here..." style="resize: none;"></textarea>
+        <div class="d-flex justify-content-end">
+            <button class="btn btn-outline-secondary btn-sm me-2" onclick="closeNoteBox()">Cancel</button>
+            <button class="btn btn-dark btn-sm" onclick="confirmAddNote()">Stick Note</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="noteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="fas fa-sticky-note me-2"></i>Read Note</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p id="modal-note-content" class="lead text-dark" style="white-space: pre-wrap;"></p>
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-danger" id="btn-delete-note">Delete Note</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid pb-5">
+    
+    <div class="d-flex justify-content-between align-items-center mb-3 bg-white p-3 shadow-sm rounded sticky-top">
+        <div>
+            <a href="{% url 'lecture_list' %}" class="text-decoration-none text-muted me-2">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+            <span class="fw-bold h5 mb-0">{{ lecture.title }}</span>
+            
+            <span id="save-status" class="ms-3 badge bg-light text-secondary border rounded-pill px-3 py-2" style="font-weight: normal; transition: all 0.3s;">
+                <i class="fas fa-check-circle me-1"></i> Up to date
+            </span>
+        </div>
+        
+        <div class="btn-group shadow-sm">
+            <button type="button" class="btn btn-warning" onmousedown="event.preventDefault()" onclick="applyHighlight()">
+                <i class="fas fa-highlighter"></i> Highlight
+            </button>
+            <button type="button" class="btn btn-info text-white" onmousedown="event.preventDefault()" onclick="openNoteCreator()">
+                <i class="fas fa-comment-alt"></i> Add Note
+            </button>
+        </div>
+    </div>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row justify-content-center" {% if show_attendance_gate %}style="filter: blur(15px); pointer-events: none; user-select: none;"{% endif %}>
+        <div class="col-lg-10 col-xl-9">
+            <div id="document-container" class="bg-white p-5 shadow-sm min-vh-100 position-relative" 
+                 style="font-family: 'Georgia', serif; line-height: 1.8; font-size: 1.15rem; overflow-x: auto; word-wrap: break-word;">
+                {% if display_content %}
+                    {{ display_content|safe }}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                        <h3 class="text-muted">Content Protected</h3>
+                        <p>Please complete the attendance check to view this document.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div style="display:none;">
+        {% csrf_token %}
+    </div>
+
+</div>
+
+<style>
+    #draggable-note-box { position: fixed; z-index: 1050; top: 20%; left: 50%; width: 300px; transform: translate(-50%, 0); }
+    #document-container img { max-width: 100% !important; height: auto !important; }
+    #document-container table { width: 100% !important; display: block; overflow-x: auto; }
+    span[style*="background-color"] { cursor: pointer; }
+    .sticky-marker { cursor: pointer; font-size: 1.4rem; color: #dc3545; margin: 0 4px; vertical-align: middle; display: inline-block; }
+</style>
+
+<script>
+    let currentActivePin = null;
+    let savedRange = null; 
+    const container = document.getElementById('document-container');
+    const statusBadge = document.getElementById('save-status');
+
+    // --- 0. ATTENDANCE GATE (Run Immediately) ---
+    document.addEventListener("DOMContentLoaded", function() {
+        {% if show_attendance_gate %}
+            var attendanceModal = new bootstrap.Modal(document.getElementById('attendanceModal'), {
+                backdrop: 'static',
+                keyboard: false
+            });
+            attendanceModal.show();
+        {% endif %}
+        
+        attachHighlightListeners();
+        const pins = document.querySelectorAll('.sticky-marker');
+        pins.forEach(el => { el.onclick = function() { openNoteModal(this); }; });
+    });
+
+    // --- 1. DRAGGABLE BOX LOGIC ---
+    dragElement(document.getElementById("draggable-note-box"));
+
+    function dragElement(elmnt) {
+      var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+      if (document.getElementById("note-box-header")) {
+        document.getElementById("note-box-header").onmousedown = dragMouseDown;
+      } else { elmnt.onmousedown = dragMouseDown; }
+      function dragMouseDown(e) {
+        e = e || window.event; e.preventDefault();
+        pos3 = e.clientX; pos4 = e.clientY;
+        document.onmouseup = closeDragElement; document.onmousemove = elementDrag;
+      }
+      function elementDrag(e) {
+        e = e || window.event; e.preventDefault();
+        pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY;
+        pos3 = e.clientX; pos4 = e.clientY;
+        elmnt.style.top = (elmnt.offsetTop - pos2) + "px"; elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+        elmnt.style.transform = "none";
+      }
+      function closeDragElement() { document.onmouseup = null; document.onmousemove = null; }
+    }
+
+    // --- 2. NOTE FUNCTIONS ---
+    function openNoteCreator() {
+        const selection = window.getSelection();
+        if (!selection.rangeCount || selection.isCollapsed) { alert("Please click where you want to place the note."); return; }
+        savedRange = selection.getRangeAt(0).cloneRange();
+        document.getElementById('draggable-note-box').style.display = "block";
+        document.getElementById('note-text-input').value = ""; document.getElementById('note-text-input').focus();
+    }
+    function closeNoteBox() { document.getElementById('draggable-note-box').style.display = "none"; savedRange = null; }
+
+    function confirmAddNote() {
+        const text = document.getElementById('note-text-input').value;
+        if(!text) { alert("Please type a note first."); return; }
+        if(!savedRange) { alert("Lost selection. Try again."); closeNoteBox(); return; }
+        const pin = document.createElement('i');
+        pin.className = 'fas fa-map-marker-alt sticky-marker'; 
+        pin.setAttribute('data-note', text);
+        pin.onclick = function() { openNoteModal(this); };
+        savedRange.collapse(false); savedRange.insertNode(pin); savedRange.insertNode(document.createTextNode(" "));
+        closeNoteBox(); autoSaveWork();
+    }
+
+    // --- 3. HIGHLIGHT FUNCTIONS ---
+    function applyHighlight() {
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0 || selection.isCollapsed) { alert("Please select some text first."); return; }
+        document.designMode = "on"; document.execCommand("BackColor", false, "#fff176"); document.designMode = "off";
+        selection.removeAllRanges(); attachHighlightListeners(); autoSaveWork();
+    }
+
+    function attachHighlightListeners() {
+        const allElements = container.getElementsByTagName("*");
+        for (let i = 0; i < allElements.length; i++) {
+            const el = allElements[i]; const style = window.getComputedStyle(el);
+            if (style.backgroundColor === 'rgb(255, 241, 118)' || style.backgroundColor === '#fff176') {
+                el.title = "Click to remove highlight"; el.onclick = function() { removeHighlight(this); };
+            }
+        }
+    }
+    function removeHighlight(element) { if(confirm("Remove this highlight?")) { element.style.backgroundColor = "transparent"; autoSaveWork(); } }
+
+    // --- 4. MODAL & SMART SAVE (FIXED CSRF) ---
+    function openNoteModal(pinElement) {
+        currentActivePin = pinElement;
+        document.getElementById('modal-note-content').innerText = pinElement.getAttribute('data-note');
+        new bootstrap.Modal(document.getElementById('noteModal')).show();
+    }
+    
+    document.getElementById('btn-delete-note').onclick = function() {
+        if (currentActivePin) {
+            currentActivePin.remove(); 
+            bootstrap.Modal.getInstance(document.getElementById('noteModal')).hide();
+            currentActivePin = null; autoSaveWork();
+        }
+    };
+
+    function autoSaveWork() {
+        statusBadge.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
+        statusBadge.className = "ms-3 badge bg-warning text-dark border rounded-pill px-3 py-2";
+
+        const formData = new FormData();
+        formData.append('annotated_html_input', container.innerHTML);
+        
+        // --- KEY FIX: Grab the token correctly ---
+        const tokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (tokenInput) {
+            formData.append('csrfmiddlewaretoken', tokenInput.value);
+        } else {
+            console.error("Critical: CSRF Token Missing from DOM.");
+            statusBadge.innerHTML = '<i class="fas fa-lock me-1"></i> Security Error';
+            statusBadge.className = "ms-3 badge bg-danger text-white border rounded-pill px-3 py-2";
+            return;
+        }
+
+        fetch(window.location.href, { 
+            method: 'POST', 
+            body: formData, 
+            headers: { 'X-Requested-With': 'XMLHttpRequest' } 
+        })
+        .then(response => { 
+            if (response.ok) {
+                setTimeout(() => { 
+                    statusBadge.innerHTML = '<i class="fas fa-check-circle me-1"></i> Saved'; 
+                    statusBadge.className = "ms-3 badge bg-success text-white border rounded-pill px-3 py-2"; 
+                }, 500);
+            } else {
+                console.error("Save failed:", response.status, response.statusText);
+                statusBadge.innerHTML = `<i class="fas fa-exclamation-circle me-1"></i> Error ${response.status}`;
+                statusBadge.className = "ms-3 badge bg-danger text-white border rounded-pill px-3 py-2";
+                
+                if (response.status === 403) {
+                    alert("Error 403 (Permission Denied). This usually means:\n1. You are a Student who has NOT clicked 'Attend'.\n2. Or the Security Token is missing (try refreshing).");
+                } else if (response.status === 400) {
+                     alert("Error 400 (File Too Large). Please contact Kevin to check 'settings.py'.");
+                }
+            }
+        })
+        .catch(error => {
+            console.error("Network error:", error);
+            statusBadge.innerHTML = '<i class="fas fa-wifi me-1"></i> Net Error';
+            statusBadge.className = "ms-3 badge bg-danger text-white border rounded-pill px-3 py-2";
+        });
+    }
+</script>
+{% endblock %}

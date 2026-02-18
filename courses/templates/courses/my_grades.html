@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <h2 class="fw-bold mb-4"><i class="fas fa-graduation-cap text-primary me-2"></i>My Gradebook</h2>
+
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-4 py-3">Module Name</th>
+                                    <th class="py-3">Score</th>
+                                    <th class="py-3">Date Completed</th>
+                                    <th class="py-3 text-end pe-4">Attempt Type</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for attempt in attempts %}
+                                <tr>
+                                    <td class="ps-4 fw-semibold text-dark">{{ attempt.lecture.title }}</td>
+                                    <td>
+                                        <span class="badge bg-primary fs-6 px-3 py-2 rounded-pill">
+                                            {{ attempt.score }} / {{ attempt.total_questions }}
+                                        </span>
+                                    </td>
+                                    <td class="text-muted small">
+                                        <i class="far fa-calendar-alt me-1"></i> {{ attempt.timestamp|date:"M d, Y" }}
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        {% if attempt.is_official_attempt %}
+                                            <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-2">Official</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary rounded-pill px-2">Practice/Retry</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-5 text-muted">
+                                        You haven't taken any quizzes yet. <a href="{% url 'lecture_list' %}">Start learning!</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

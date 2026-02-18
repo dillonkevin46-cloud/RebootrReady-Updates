@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold"><i class="fas fa-user-clock me-2 text-primary"></i>Module Attendance Register</h2>
+        <a href="{% url 'teacher_dashboard' %}" class="btn btn-outline-secondary">Back to Console</a>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Student Name</th>
+                            <th>Module / Lecture</th>
+                            <th>Date Attended</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in records %}
+                        <tr>
+                            <td class="ps-4 fw-bold">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center text-primary fw-bold me-2" style="width: 35px; height: 35px;">
+                                        {{ record.student.username|slice:":1"|upper }}
+                                    </div>
+                                    {{ record.student.username }}
+                                </div>
+                            </td>
+                            <td>{{ record.lecture.title }}</td>
+                            <td>{{ record.timestamp|date:"M d, Y" }}</td>
+                            <td>{{ record.timestamp|date:"H:i A" }}</td>
+                            <td>
+                                <span class="badge bg-success"><i class="fas fa-check me-1"></i> Acknowledged</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                No attendance records found yet.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

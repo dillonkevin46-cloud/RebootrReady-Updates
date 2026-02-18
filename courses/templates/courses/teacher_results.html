@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold"><i class="fas fa-clipboard-list me-2 text-primary"></i>Student Quiz Results</h2>
+        <a href="{% url 'teacher_dashboard' %}" class="btn btn-outline-secondary">Back to Console</a>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-3 bg-light rounded-3">
+            <form method="get" class="row g-2 align-items-center">
+                <div class="col-md-10">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" name="q" class="form-control border-start-0" 
+                               placeholder="Search by student name or module title..." 
+                               value="{{ search_query|default:'' }}">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs mb-3" id="resultTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold" id="official-tab" data-bs-toggle="tab" data-bs-target="#official" type="button" role="tab">
+                <i class="fas fa-check-circle text-success me-2"></i>Official Results
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="retries-tab" data-bs-toggle="tab" data-bs-target="#retries" type="button" role="tab">
+                <i class="fas fa-redo text-warning me-2"></i>Practice / Retries
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="resultTabsContent">
+        
+        <div class="tab-pane fade show active" id="official" role="tabpanel">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-4">Student Name</th>
+                                    <th>Lecture / Module</th>
+                                    <th>Score</th>
+                                    <th>Date Taken</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for attempt in official_attempts %}
+                                <tr>
+                                    <td class="ps-4 fw-bold">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center text-primary fw-bold me-2" style="width: 35px; height: 35px;">
+                                                {{ attempt.student.username|slice:":1"|upper }}
+                                            </div>
+                                            {{ attempt.student.username }}
+                                        </div>
+                                    </td>
+                                    <td>{{ attempt.lecture.title }}</td>
+                                    <td>
+                                        <span class="badge {% if attempt.score == attempt.total_questions %}bg-success{% else %}bg-primary{% endif %} fs-6">
+                                            {{ attempt.score }} / {{ attempt.total_questions }}
+                                        </span>
+                                    </td>
+                                    <td class="text-muted small">{{ attempt.timestamp|date:"M d, Y H:i" }}</td>
+                                    <td><span class="badge border text-success bg-light">Official</span></td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="text-center py-5 text-muted">No official attempts found.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="retries" role="tabpanel">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-4">Student Name</th>
+                                    <th>Lecture / Module</th>
+                                    <th>Score</th>
+                                    <th>Date Taken</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for attempt in retry_attempts %}
+                                <tr>
+                                    <td class="ps-4 text-muted">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center text-secondary fw-bold me-2" style="width: 35px; height: 35px;">
+                                                {{ attempt.student.username|slice:":1"|upper }}
+                                            </div>
+                                            {{ attempt.student.username }}
+                                        </div>
+                                    </td>
+                                    <td>{{ attempt.lecture.title }}</td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ attempt.score }} / {{ attempt.total_questions }}</span>
+                                    </td>
+                                    <td class="text-muted small">{{ attempt.timestamp|date:"M d, Y H:i" }}</td>
+                                    <td><span class="badge bg-warning text-dark">Retry</span></td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="text-center py-5 text-muted">No retry attempts found.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
