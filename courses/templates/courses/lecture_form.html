@@ -21,7 +21,14 @@
                         </div>
                     </div>
 
-                    {{ form.category|as_crispy_field }}
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ form.category|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.department|as_crispy_field }}
+                        </div>
+                    </div>
                     {{ form.description|as_crispy_field }}
                     
                     <div class="card bg-light border-0 p-3 mb-3">
