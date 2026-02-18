@@ -4,9 +4,10 @@ from .models import Lecture, StudentNote, Category
 class LectureForm(forms.ModelForm):
     class Meta:
         model = Lecture
-        fields = ['title', 'description', 'category', 'word_document', 'order', 'is_unlocked', 'is_quiz_unlocked']
+        fields = ['title', 'description', 'category', 'department', 'word_document', 'order', 'is_unlocked', 'is_quiz_unlocked']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 3}),
+            'department': forms.Select(attrs={'class': 'form-select'}),
         }
         labels = {
             'is_unlocked': 'Unlock Module Content?',

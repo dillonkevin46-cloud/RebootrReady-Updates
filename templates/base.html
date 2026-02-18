@@ -71,6 +71,7 @@
         
         <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm mb-4 px-4">
             <div class="container-fluid">
+                <button class="btn btn-outline-primary" id="menu-toggle"><i class="fas fa-bars"></i></button>
                 <span class="navbar-text ms-auto fw-bold text-dark">
                     Welcome back, {{ user.username }}! 👋
                 </span>
@@ -105,6 +106,13 @@
             menuItem[i].classList.add("active");
         }
     }
+
+    var el = document.getElementById("wrapper");
+    var toggleButton = document.getElementById("menu-toggle");
+
+    toggleButton.onclick = function () {
+        el.classList.toggle("toggled");
+    };
 </script>
 
 </body>

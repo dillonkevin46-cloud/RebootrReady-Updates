@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.http import JsonResponse
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.utils.text import slugify
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
@@ -19,11 +19,11 @@ from .forms import LectureForm, ExcelUploadForm, StudentNoteForm, CategoryForm, 
 @login_required
 def lecture_list(request):
     if request.user.is_superuser:
-        lectures = Lecture.objects.all().order_by('department', 'order')
+        lectures = Lecture.objects.select_related('category', 'department').all().order_by('department', 'order')
     else:
         user_dept = request.user.department
         if user_dept:
-            lectures = Lecture.objects.filter(department=user_dept).order_by('order')
+            lectures = Lecture.objects.select_related('category', 'department').filter(department=user_dept).order_by('order')
         else:
             lectures = Lecture.objects.none()
 
@@ -46,19 +46,20 @@ def lecture_list(request):
     User = get_user_model()
     
     if request.user.is_superuser:
-         users = User.objects.filter(is_superuser=False, is_teacher=False)
+         users = User.objects.filter(is_superuser=False, is_teacher=False).annotate(
+             total_score=Sum('quizattempt__score', filter=Q(quizattempt__is_official_attempt=True))
+         )
     else:
          if request.user.department:
-            users = User.objects.filter(is_superuser=False, is_teacher=False, department=request.user.department)
+            users = User.objects.filter(is_superuser=False, is_teacher=False, department=request.user.department).annotate(
+                total_score=Sum('quizattempt__score', filter=Q(quizattempt__is_official_attempt=True))
+            )
          else:
             users = User.objects.none()
     
     leaderboard = []
     for student in users:
-        attempts = QuizAttempt.objects.filter(student=student, is_official_attempt=True)
-        total_score = sum(a.score for a in attempts)
-        if total_score > 0:
-            student.total_score = total_score
+        if student.total_score and student.total_score > 0:
             leaderboard.append(student)
             
     leaderboard.sort(key=lambda x: x.total_score, reverse=True)
@@ -303,9 +304,9 @@ def is_teacher_or_admin(user):
 @user_passes_test(is_teacher_or_admin)
 def teacher_dashboard(request):
     if request.user.is_superuser:
-        lectures = Lecture.objects.all().order_by('department', 'order')
+        lectures = Lecture.objects.select_related('category').all().order_by('department', 'order')
     else:
-        lectures = Lecture.objects.filter(department=request.user.department).order_by('order')
+        lectures = Lecture.objects.select_related('category').filter(department=request.user.department).order_by('order')
         
     return render(request, 'courses/teacher_dashboard.html', {'lectures': lectures})
 
@@ -332,7 +333,7 @@ def lecture_create(request):
         form = LectureForm(request.POST, request.FILES)
         if form.is_valid():
             lecture = form.save(commit=False)
-            if not request.user.is_superuser:
+            if not request.user.is_superuser and not lecture.department:
                 lecture.department = request.user.department
             lecture.save()
             messages.success(request, "Lecture created successfully!")
@@ -435,7 +436,7 @@ def teacher_results(request):
 
 @user_passes_test(is_teacher_or_admin)
 def teacher_attendance_report(request):
-    records = Attendance.objects.all().order_by('-timestamp')
+    records = Attendance.objects.select_related('student', 'lecture').all().order_by('-timestamp')
     
     if not request.user.is_superuser:
         if request.user.department:
@@ -460,9 +461,9 @@ def email_report(request):
 
             message_body = form.cleaned_data['message']
 
-            attendance_records = Attendance.objects.filter(lecture=lecture)
+            attendance_records = Attendance.objects.filter(lecture=lecture).select_related('student')
             
-            quiz_attempts = QuizAttempt.objects.filter(lecture=lecture).order_by('-score')
+            quiz_attempts = QuizAttempt.objects.filter(lecture=lecture).select_related('student').order_by('-score')
             student_best_scores = {}
             for attempt in quiz_attempts:
                 if attempt.student.username not in student_best_scores:
